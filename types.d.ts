@@ -49,6 +49,7 @@ type KeywordType = {
    scData?: KeywordSCData,
    uid?: string
    city?: string
+   interval?: string,
 }
 
 type KeywordLastResult = {
@@ -62,6 +63,7 @@ type KeywordFilters = {
    countries: string[],
    tags: string[],
    search: string,
+   interval?: string,
 }
 
 type countryData = {
@@ -145,7 +147,8 @@ type KeywordAddPayload = {
    country: string,
    domain: string,
    tags?: string,
-   city?:string
+   city?:string,
+   interval?: string,
 }
 
 type SearchAnalyticsRawItem = {

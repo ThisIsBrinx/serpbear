@@ -20,6 +20,7 @@ type KeywordsInput = {
    domain: string,
    tags: string,
    city?:string,
+   interval?: string,
 }
 
 const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCity = false }: AddKeywordsProps) => {
@@ -28,7 +29,14 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
 
    const [error, setError] = useState<string>('');
    const [showTagSuggestions, setShowTagSuggestions] = useState(false);
-   const [newKeywordsData, setNewKeywordsData] = useState<KeywordsInput>({ keywords: '', device: 'desktop', country: defCountry, domain, tags: '' });
+   const [newKeywordsData, setNewKeywordsData] = useState<KeywordsInput>({
+      keywords: '',
+      device: 'desktop',
+      country: defCountry,
+      domain,
+      tags: '',
+      interval: 'daily',
+   });
    const { mutate: addMutate, isLoading: isAdding } = useAddKeywords(() => closeModal(false));
 
    const existingTags: string[] = useMemo(() => {
@@ -72,6 +80,7 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
                  domain: nkwrds.domain,
                  tags: nkwrds.tags,
                  city: nkwrds.city,
+                 interval: nkwrds.interval || 'daily',
                })),
              );
             addMutate(newKeywords);
@@ -126,6 +135,23 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
                            <Icon type='mobile' /> <i className='not-italic hidden lg:inline-block'>Mobile</i>
                            <Icon type='check' classes={'pl-1'} size={12} color={newKeywordsData.device.includes('mobile') ? '#4338ca' : '#bbb'} />
                         </li>
+                  </ul>
+               </div>
+               <div className='my-3 flex justify-between items-center text-xs font-semibold text-gray-500'>
+                  <span className='text-gray-600'>Tracking Interval:</span>
+                  <ul className='flex'>
+                     <li
+                        className={`${deviceTabStyle} mr-2 ${newKeywordsData.interval === 'daily' ? ' bg-indigo-50 text-indigo-700' : ''}`}
+                        onClick={() => setNewKeywordsData({ ...newKeywordsData, interval: 'daily' })}>
+                           <i className='not-italic'>Daily</i>
+                           <Icon type='check' classes={'pl-1'} size={12} color={newKeywordsData.interval === 'daily' ? '#4338ca' : '#bbb'} />
+                     </li>
+                     <li
+                        className={`${deviceTabStyle} ${newKeywordsData.interval === 'weekly' ? ' bg-indigo-50 text-indigo-700' : ''}`}
+                        onClick={() => setNewKeywordsData({ ...newKeywordsData, interval: 'weekly' })}>
+                           <i className='not-italic'>Weekly (Mon)</i>
+                           <Icon type='check' classes={'pl-1'} size={12} color={newKeywordsData.interval === 'weekly' ? '#4338ca' : '#bbb'} />
+                     </li>
                   </ul>
                </div>
                <div className='relative'>

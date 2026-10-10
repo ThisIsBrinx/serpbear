@@ -7,7 +7,7 @@ import Keyword from './Keyword';
 import KeywordDetails from './KeywordDetails';
 import KeywordFilters from './KeywordFilter';
 import Modal from '../common/Modal';
-import { useDeleteKeywords, useFavKeywords, useRefreshKeywords } from '../../services/keywords';
+import { useDeleteKeywords, useFavKeywords, useRefreshKeywords, useUpdateKeywordInterval } from '../../services/keywords';
 import KeywordTagManager from './KeywordTagManager';
 import AddTags from './AddTags';
 import useWindowResize from '../../hooks/useWindowResize';
@@ -44,6 +44,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    const { mutate: deleteMutate } = useDeleteKeywords(() => {});
    const { mutate: favoriteMutate } = useFavKeywords(() => {});
    const { mutate: refreshMutate } = useRefreshKeywords(() => {});
+   const { mutate: intervalMutate } = useUpdateKeywordInterval(() => {});
    const [isMobile] = useIsMobile();
 
    useWindowResize(() => {
@@ -121,6 +122,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
          scDataType={scDataType}
          tableColumns={tableColumns}
          maxTitleColumnWidth={maxTitleColumnWidth}
+         updateInterval={intervalMutate}
          />
       );
    };
@@ -154,6 +156,20 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                         onClick={() => setShowAddTags(true)}
                         >
                            <span className=' bg-green-100 text-green-500  px-1 rounded'><Icon type="tags" size={14} /></span> Tag Keywords</a>
+                     </li>
+                     <li className='inline-block mr-4'>
+                        <a
+                        className='block px-2 py-2 cursor-pointer hover:text-indigo-600'
+                        onClick={() => { intervalMutate({ keywordIDs: selectedKeywords, interval: 'daily' }); setSelectedKeywords([]); }}
+                        >
+                           <span className=' bg-indigo-100 text-indigo-700 px-1 rounded'><Icon type="clock" size={13} /></span> Set Daily</a>
+                     </li>
+                     <li className='inline-block mr-4'>
+                        <a
+                        className='block px-2 py-2 cursor-pointer hover:text-indigo-600'
+                        onClick={() => { intervalMutate({ keywordIDs: selectedKeywords, interval: 'weekly' }); setSelectedKeywords([]); }}
+                        >
+                           <span className=' bg-purple-100 text-purple-700 px-1 rounded'><Icon type="clock" size={13} /></span> Set Weekly (Mon)</a>
                      </li>
                   </ul>
                </div>

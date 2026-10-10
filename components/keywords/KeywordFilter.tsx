@@ -176,6 +176,21 @@ const KeywordFilters = (props: KeywordFilterProps) => {
                      />
                   </div>
                )}
+               {!isConsole && (
+                  <div className={'interval_filter mb-2 lg:mb-0'}>
+                     <SelectField
+                        selected={filterParams.interval ? [filterParams.interval] : []}
+                        options={[
+                           { label: 'All Intervals', value: '' },
+                           { label: 'Daily', value: 'daily' },
+                           { label: 'Weekly (Mon)', value: 'weekly' },
+                        ]}
+                        defaultLabel='All Intervals'
+                        updateField={(updated:string[]) => filterKeywords({ ...filterParams, interval: updated[0] || '' })}
+                        multiple={false}
+                     />
+                  </div>
+               )}
                <div className={'mb-2 lg:mb-0'}>
                   <input
                      data-testid="filter_input"

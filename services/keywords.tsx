@@ -110,6 +110,31 @@ export function useFavKeywords(onSuccess:Function) {
    });
 }
 
+export function useUpdateKeywordInterval(onSuccess: Function) {
+   const queryClient = useQueryClient();
+   return useMutation(async ({ keywordIDs, interval }: { keywordIDs: number[], interval: string }) => {
+      const keywordIds = keywordIDs.join(',');
+      const headers = new Headers({ 'Content-Type': 'application/json', Accept: 'application/json' });
+      const fetchOpts = { method: 'PUT', headers, body: JSON.stringify({ interval }) };
+      const res = await fetch(`${window.location.origin}/api/keywords?id=${keywordIds}`, fetchOpts);
+      if (res.status >= 400 && res.status < 600) {
+         throw new Error('Bad response from server');
+      }
+      return res.json();
+   }, {
+      onSuccess: async (data) => {
+         onSuccess();
+         const updatedInterval = data?.keywords?.[0]?.interval || 'daily';
+         toast(`Keyword Interval set to ${updatedInterval === 'weekly' ? 'Weekly (Mondays)' : 'Daily'}!`, { icon: '✔️' });
+         queryClient.invalidateQueries(['keywords']);
+      },
+      onError: () => {
+         console.log('Error Changing Keyword Interval!!!');
+         toast('Error Changing Keyword Interval.', { icon: '⚠️' });
+      },
+   });
+}
+
 export function useUpdateKeywordTags(onSuccess:Function) {
    const queryClient = useQueryClient();
    return useMutation(async ({ tags }:{tags:{ [ID:number]: string[] }}) => {

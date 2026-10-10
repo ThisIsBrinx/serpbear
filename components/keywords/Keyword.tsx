@@ -23,7 +23,8 @@ type KeywordProps = {
    scDataType: string,
    style: Object,
    maxTitleColumnWidth: number,
-   tableColumns? : string[]
+   tableColumns? : string[],
+   updateInterval?: Function
 }
 
 const Keyword = (props: KeywordProps) => {
@@ -43,9 +44,11 @@ const Keyword = (props: KeywordProps) => {
       scDataType = 'threeDays',
       tableColumns = [],
       maxTitleColumnWidth,
+      updateInterval,
    } = props;
    const {
-      keyword, domain, ID, city, position, url = '', lastUpdated, country, sticky, history = {}, updating = false, lastUpdateError = false, volume,
+      keyword, domain, ID, city, position, url = '', lastUpdated, country, sticky,
+      history = {}, updating = false, lastUpdateError = false, volume, interval = 'daily',
    } = keywordData;
 
    const [showOptions, setShowOptions] = useState(false);
@@ -116,6 +119,14 @@ const Keyword = (props: KeywordProps) => {
                   {keyword}{city ? ` (${city})` : ''}
                </span>
             </a>
+            {interval === 'weekly' && (
+               <span
+                  className={'ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider '
+                     + 'bg-purple-50 text-purple-700 border border-purple-200 shrink-0'}
+                  title='Tracked Weekly (every Monday)'>
+                  Weekly
+               </span>
+            )}
             {sticky && <button className='ml-2 relative top-[2px]' title='Favorite'><Icon type="star-filled" size={16} color="#fbd346" /></button>}
             {lastUpdateError && lastUpdateError.date
                && <button className='ml-2 relative top-[2px]' onClick={() => setPositionError(true)}>
@@ -216,6 +227,20 @@ const Keyword = (props: KeywordProps) => {
                   <li><a className={optionsButtonStyle} onClick={() => { manageTags(); setShowOptions(false); }}>
                      <span className=' bg-green-100 text-green-500 px-1 rounded'><Icon type="tags" size={14} /></span> Add/Edit Tags</a>
                   </li>
+                  {updateInterval && (
+                     <li>
+                        <a
+                        className={optionsButtonStyle}
+                        onClick={() => {
+                           updateInterval({ keywordIDs: [ID], interval: interval === 'weekly' ? 'daily' : 'weekly' });
+                           setShowOptions(false);
+                        }}>
+                           <span className=' bg-purple-100 text-purple-700 px-1 rounded'>
+                              <Icon type="clock" size={13} />
+                           </span> { interval === 'weekly' ? 'Switch to Daily' : 'Switch to Weekly (Mon)'}
+                        </a>
+                     </li>
+                  )}
                   <li><a className={optionsButtonStyle} onClick={() => { removeKeyword([ID]); setShowOptions(false); }}>
                      <span className=' bg-red-100 text-red-600 px-1 rounded'><Icon type="trash" size={14} /></span> Remove Keyword</a>
                   </li>

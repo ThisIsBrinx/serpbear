@@ -1,7 +1,6 @@
 /* eslint-disable no-new */
 const Cryptr = require('cryptr');
-const { promises } = require('fs');
-const { readFile } = require('fs');
+const { promises, readFile, watchFile } = require('fs');
 const { Cron } = require('croner');
 require('dotenv').config({ path: './.env.local' });
 
@@ -25,7 +24,6 @@ const getAppSettings = async () => {
       smtp_username: '',
       smtp_password: '',
    };
-   // console.log('process.env.SECRET: ', process.env.SECRET);
    try {
       let decryptedSettings = {};
       const exists = await promises.stat(`${process.cwd()}/data/settings.json`).then(() => true).catch(() => false);
@@ -56,7 +54,6 @@ const getAppSettings = async () => {
       }
       return decryptedSettings;
    } catch (error) {
-      // console.log('CRON ERROR: Reading Settings File. ', error);
       await promises.mkdir(`${process.cwd()}/data`, { recursive: true }).catch(() => {});
       await promises.writeFile(`${process.cwd()}/data/settings.json`, JSON.stringify(defaultSettings), { encoding: 'utf-8' }).catch(() => {});
       return defaultSettings;
@@ -72,102 +69,149 @@ const generateCronTime = (interval) => {
       cronTime = '0 0 0 * * *';
    }
    if (interval === 'other_day') {
-      cronTime = '0 0 2-30/2 * *';
+      cronTime = '0 0 0 */2 * *'; // Robust 6-field: every 2 days at midnight
    }
    if (interval === 'daily_morning') {
       cronTime = '0 0 3 * * *';
    }
    if (interval === 'weekly') {
-      cronTime = '0 0 * * 1';
+      cronTime = '0 0 0 * * 1'; // 6-field: every Monday at midnight
    }
    if (interval === 'monthly') {
-      cronTime = '0 0 1 * *'; // Run every first day of the month at 00:00(midnight)
+      cronTime = '0 0 0 1 * *'; // 6-field: every 1st of month at midnight
    }
 
    return cronTime;
 };
 
-const runAppCronJobs = () => {
-   getAppSettings().then((settings) => {
-      // RUN SERP Scraping CRON (EveryDay at Midnight) 0 0 0 * *
-      const scrape_interval = settings.scrape_interval || 'daily';
-      if (scrape_interval !== 'never') {
-         const scrapeCronTime = generateCronTime(scrape_interval);
-         new Cron(scrapeCronTime, () => {
-            // console.log('### Running Keyword Position Cron Job!');
+const cronOptions = {
+   scheduled: true,
+   timezone: process.env.TZ || undefined,
+};
+
+let activeJobs = [];
+
+const stopActiveJobs = () => {
+   if (activeJobs.length > 0) {
+      console.log(`[CRON] Stopping ${activeJobs.length} active cron job(s)...`);
+      activeJobs.forEach((job) => {
+         try {
+            job.stop();
+         } catch (err) {
+            // ignore
+         }
+      });
+      activeJobs = [];
+   }
+};
+
+const runAppCronJobs = async () => {
+   stopActiveJobs();
+   const settings = await getAppSettings();
+
+   console.log(`[CRON] Initializing cron scheduler (TZ: ${process.env.TZ || 'system/UTC'})...`);
+
+   // 1. RUN SERP Scraping CRON
+   const scrape_interval = settings.scrape_interval || 'daily';
+   if (scrape_interval !== 'never') {
+      const scrapeCronTime = generateCronTime(scrape_interval);
+      if (scrapeCronTime) {
+         const serpJob = new Cron(scrapeCronTime, cronOptions, () => {
+            console.log(`[${new Date().toISOString()}] [CRON] Running Keyword Position Scrape Job...`);
             const fetchOpts = { method: 'POST', headers: { Authorization: `Bearer ${process.env.APIKEY}` } };
             fetch(`${INTERNAL_BASE_URL}/api/cron`, fetchOpts)
             .then((res) => res.json())
-            // .then((data) =>{ console.log(data)})
+            .then((data) => {
+               console.log(`[${new Date().toISOString()}] [CRON] Scrape Job response:`, data?.message || data?.started);
+            })
             .catch((err) => {
-               console.log('ERROR Making SERP Scraper Cron Request..');
-               console.log(err);
+               console.log('[CRON ERROR] Making SERP Scraper Cron Request:', err.message || err);
             });
-         }, { scheduled: true });
+         });
+         activeJobs.push(serpJob);
+         console.log(`[CRON] SERP Scraping scheduled with interval "${scrape_interval}" (${scrapeCronTime}). Next run: ${serpJob.nextRun()}`);
       }
+   } else {
+      console.log('[CRON] SERP Scraping disabled ("never").');
+   }
 
-      // RUN Email Notification CRON
-      const notif_interval = (!settings.notification_interval || settings.notification_interval === 'never') ? false : settings.notification_interval;
-      if (notif_interval) {
-         const cronTime = generateCronTime(notif_interval === 'daily' ? 'daily_morning' : notif_interval);
-         if (cronTime) {
-            new Cron(cronTime, () => {
-               // console.log('### Sending Notification Email...');
-               const fetchOpts = { method: 'POST', headers: { Authorization: `Bearer ${process.env.APIKEY}` } };
-               fetch(`${INTERNAL_BASE_URL}/api/notify`, fetchOpts)
-               .then((res) => res.json())
-               .then((data) => console.log(data))
-               .catch((err) => {
-                  console.log('ERROR Making Cron Email Notification Request..');
-                  console.log(err);
-               });
-            }, { scheduled: true });
-         }
+   // 2. RUN Email Notification CRON
+   const notif_interval = (!settings.notification_interval || settings.notification_interval === 'never') ? false : settings.notification_interval;
+   if (notif_interval) {
+      const notifCronTime = generateCronTime(notif_interval === 'daily' ? 'daily_morning' : notif_interval);
+      if (notifCronTime) {
+         const notifJob = new Cron(notifCronTime, cronOptions, () => {
+            console.log(`[${new Date().toISOString()}] [CRON] Sending Notification Email...`);
+            const fetchOpts = { method: 'POST', headers: { Authorization: `Bearer ${process.env.APIKEY}` } };
+            fetch(`${INTERNAL_BASE_URL}/api/notify`, fetchOpts)
+            .then((res) => res.json())
+            .then((data) => console.log(`[${new Date().toISOString()}] [CRON] Notification sent:`, data))
+            .catch((err) => {
+               console.log('[CRON ERROR] Making Cron Email Notification Request:', err.message || err);
+            });
+         });
+         activeJobs.push(notifJob);
+         console.log(`[CRON] Email Notifications scheduled with interval "${notif_interval}". Next run: ${notifJob.nextRun()}`);
       }
-   });
+   }
 
-   // Run Failed scraping CRON (Every Hour)
+   // 3. RUN Failed scraping CRON (Every Hour)
    const failedCronTime = generateCronTime('hourly');
-   new Cron(failedCronTime, () => {
-      // console.log('### Retrying Failed Scrapes...');
-
+   const failedJob = new Cron(failedCronTime, cronOptions, () => {
       readFile(`${process.cwd()}/data/failed_queue.json`, { encoding: 'utf-8' }, (err, data) => {
          if (data) {
             try {
                const keywordsToRetry = data ? JSON.parse(data) : [];
                if (keywordsToRetry.length > 0) {
+                  console.log(`[${new Date().toISOString()}] [CRON] Retrying ${keywordsToRetry.length} failed scrape(s)...`);
                   const fetchOpts = { method: 'POST', headers: { Authorization: `Bearer ${process.env.APIKEY}` } };
                   fetch(`${INTERNAL_BASE_URL}/api/refresh?id=${keywordsToRetry.join(',')}`, fetchOpts)
                   .then((res) => res.json())
-                  .then((refreshedData) => console.log(refreshedData))
+                  .then((refreshedData) => console.log(`[${new Date().toISOString()}] [CRON] Failed scrapes retry result:`, refreshedData))
                   .catch((fetchErr) => {
-                     console.log('ERROR Making failed_queue Cron Request..');
-                     console.log(fetchErr);
+                     console.log('[CRON ERROR] Making failed_queue Cron Request:', fetchErr.message || fetchErr);
                   });
                }
             } catch (error) {
-               console.log('ERROR Reading Failed Scrapes Queue File..', error);
+               console.log('[CRON ERROR] Parsing Failed Scrapes Queue File:', error.message || error);
             }
-         } else {
-            console.log('ERROR Reading Failed Scrapes Queue File..', err);
          }
       });
-   }, { scheduled: true });
+   });
+   activeJobs.push(failedJob);
 
-   // Run Google Search Console Scraper Daily
+   // 4. RUN Google Search Console Scraper Daily
    if (process.env.SEARCH_CONSOLE_PRIVATE_KEY && process.env.SEARCH_CONSOLE_CLIENT_EMAIL) {
       const searchConsoleCRONTime = generateCronTime('daily');
-      new Cron(searchConsoleCRONTime, () => {
+      const scJob = new Cron(searchConsoleCRONTime, cronOptions, () => {
+         console.log(`[${new Date().toISOString()}] [CRON] Running Search Console Scraper...`);
          const fetchOpts = { method: 'POST', headers: { Authorization: `Bearer ${process.env.APIKEY}` } };
          fetch(`${INTERNAL_BASE_URL}/api/searchconsole`, fetchOpts)
          .then((res) => res.json())
-         .then((data) => console.log(data))
+         .then((data) => console.log(`[${new Date().toISOString()}] [CRON] Search Console Scrape result:`, data))
          .catch((err) => {
-            console.log('ERROR Making Google Search Console Scraper Cron Request..');
-            console.log(err);
+            console.log('[CRON ERROR] Making Google Search Console Scraper Cron Request:', err.message || err);
          });
-      }, { scheduled: true });
+      });
+      activeJobs.push(scJob);
    }
 };
 
+// Start initial jobs
 runAppCronJobs();
+
+// Dynamically watch settings file for changes so scheduler updates without Docker restart
+let reloadTimeout = null;
+try {
+   watchFile(`${process.cwd()}/data/settings.json`, { interval: 5000 }, (curr, prev) => {
+      if (curr.mtimeMs !== prev.mtimeMs) {
+         console.log('[CRON] Detected changes in settings.json. Reloading scheduler in 2s...');
+         if (reloadTimeout) clearTimeout(reloadTimeout);
+         reloadTimeout = setTimeout(() => {
+            runAppCronJobs();
+         }, 2000);
+      }
+   });
+} catch (watchErr) {
+   // File watch error non-fatal
+}

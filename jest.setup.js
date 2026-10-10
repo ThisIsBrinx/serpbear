@@ -3,6 +3,24 @@ import 'isomorphic-fetch';
 import './styles/globals.css';
 import '@testing-library/jest-dom';
 import { enableFetchMocks } from 'jest-fetch-mock';
+
+if (typeof global.TextEncoder === 'undefined') {
+   const { TextEncoder, TextDecoder } = require('util');
+   global.TextEncoder = TextEncoder;
+   global.TextDecoder = TextDecoder;
+}
+
+if (typeof global.BroadcastChannel === 'undefined') {
+   const { BroadcastChannel } = require('worker_threads');
+   global.BroadcastChannel = BroadcastChannel;
+}
+
+if (typeof global.WritableStream === 'undefined') {
+   const { ReadableStream, WritableStream, TransformStream } = require('stream/web');
+   global.ReadableStream = ReadableStream;
+   global.WritableStream = WritableStream;
+   global.TransformStream = TransformStream;
+}
 // Optional: configure or set up a testing framework before each test.
 // If you delete this file, remove `setupFilesAfterEnv` from `jest.config.js`
 

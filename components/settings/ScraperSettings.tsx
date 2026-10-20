@@ -101,7 +101,7 @@ const ScraperSettings = ({ settings, settingsError, updateSettings }:ScraperSett
                   maxHeight={48}
                   minWidth={220}
                />
-               <small className=' text-gray-500 pt-2 block'>This option requires Server/Docker Instance Restart to take Effect.</small>
+               <small className=' text-gray-500 pt-2 block'>Changes take effect automatically within seconds (no restart required).</small>
             </div>
          )}
             <div className="settings__section__input mb-5">
@@ -116,7 +116,7 @@ const ScraperSettings = ({ settings, settingsError, updateSettings }:ScraperSett
                   maxHeight={48}
                   minWidth={220}
                />
-               <small className=' text-gray-500 pt-2 block'>This option requires Server/Docker Instance Restart to take Effect.</small>
+               <small className=' text-gray-500 pt-2 block'>Changes take effect automatically within seconds (no restart required).</small>
             </div>
             <div className="settings__section__input mb-5">
                <ToggleField

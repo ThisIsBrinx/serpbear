@@ -23,6 +23,14 @@ type KeywordsInput = {
    interval?: string,
 }
 
+const intervalOptions = [
+   { label: 'Daily', value: 'daily' },
+   { label: 'Every Other Day', value: 'other_day' },
+   { label: 'Weekly', value: 'weekly' },
+   { label: 'Monthly', value: 'monthly' },
+   { label: 'Never', value: 'never' },
+];
+
 const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCity = false }: AddKeywordsProps) => {
    const inputRef = useRef(null);
    const defCountry = localStorage.getItem('default_country') || 'US';
@@ -137,22 +145,22 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
                         </li>
                   </ul>
                </div>
-               <div className='my-3 flex justify-between items-center text-xs font-semibold text-gray-500'>
-                  <span className='text-gray-600'>Tracking Interval:</span>
-                  <ul className='flex'>
-                     <li
-                        className={`${deviceTabStyle} mr-2 ${newKeywordsData.interval === 'daily' ? ' bg-indigo-50 text-indigo-700' : ''}`}
-                        onClick={() => setNewKeywordsData({ ...newKeywordsData, interval: 'daily' })}>
-                           <i className='not-italic'>Daily</i>
-                           <Icon type='check' classes={'pl-1'} size={12} color={newKeywordsData.interval === 'daily' ? '#4338ca' : '#bbb'} />
-                     </li>
-                     <li
-                        className={`${deviceTabStyle} ${newKeywordsData.interval === 'weekly' ? ' bg-indigo-50 text-indigo-700' : ''}`}
-                        onClick={() => setNewKeywordsData({ ...newKeywordsData, interval: 'weekly' })}>
-                           <i className='not-italic'>Weekly (Mon)</i>
-                           <Icon type='check' classes={'pl-1'} size={12} color={newKeywordsData.interval === 'weekly' ? '#4338ca' : '#bbb'} />
-                     </li>
-                  </ul>
+               <div className='my-3 flex justify-between items-center text-sm'>
+                  <span className='text-gray-600 font-semibold text-xs'>Scraping Frequency:</span>
+                  <SelectField
+                     multiple={false}
+                     selected={[newKeywordsData.interval || 'daily']}
+                     options={intervalOptions}
+                     defaultLabel='Select Interval'
+                     updateField={(updated:string[]) => {
+                        if (updated[0]) {
+                           setNewKeywordsData({ ...newKeywordsData, interval: updated[0] });
+                        }
+                     }}
+                     rounded='rounded'
+                     maxHeight={48}
+                     minWidth={180}
+                  />
                </div>
                <div className='relative'>
                   <input

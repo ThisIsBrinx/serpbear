@@ -183,6 +183,7 @@ const KeywordFilters = (props: KeywordFilterProps) => {
                         selected={filterParams.interval ? [filterParams.interval] : []}
                         options={[
                            { label: 'All Intervals', value: '' },
+                           { label: 'Global Setting', value: 'default' },
                            { label: 'Daily', value: 'daily' },
                            { label: 'Every Other Day', value: 'other_day' },
                            { label: 'Weekly', value: 'weekly' },

@@ -10,7 +10,8 @@ type AddKeywordsProps = {
    scraperName: string,
    allowsCity: boolean,
    closeModal: Function,
-   domain: string
+   domain: string,
+   scrapeInterval?: string,
 }
 
 type KeywordsInput = {
@@ -23,17 +24,27 @@ type KeywordsInput = {
    interval?: string,
 }
 
-const intervalOptions = [
-   { label: 'Daily', value: 'daily' },
-   { label: 'Every Other Day', value: 'other_day' },
-   { label: 'Weekly', value: 'weekly' },
-   { label: 'Monthly', value: 'monthly' },
-   { label: 'Never', value: 'never' },
-];
+const intervalLabelMap: Record<string, string> = {
+   daily: 'Daily',
+   other_day: 'Every Other Day',
+   weekly: 'Weekly',
+   monthly: 'Monthly',
+   never: 'Never',
+};
 
-const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCity = false }: AddKeywordsProps) => {
+const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCity = false, scrapeInterval = 'daily' }: AddKeywordsProps) => {
    const inputRef = useRef(null);
    const defCountry = localStorage.getItem('default_country') || 'US';
+   const globalLabel = intervalLabelMap[scrapeInterval] || 'Daily';
+
+   const intervalOptions = useMemo(() => [
+      { label: `Global Setting (${globalLabel})`, value: 'default' },
+      { label: 'Daily', value: 'daily' },
+      { label: 'Every Other Day', value: 'other_day' },
+      { label: 'Weekly', value: 'weekly' },
+      { label: 'Monthly', value: 'monthly' },
+      { label: 'Never', value: 'never' },
+   ], [globalLabel]);
 
    const [error, setError] = useState<string>('');
    const [showTagSuggestions, setShowTagSuggestions] = useState(false);
@@ -43,7 +54,7 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
       country: defCountry,
       domain,
       tags: '',
-      interval: 'daily',
+      interval: 'default',
    });
    const { mutate: addMutate, isLoading: isAdding } = useAddKeywords(() => closeModal(false));
 
@@ -88,7 +99,7 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
                  domain: nkwrds.domain,
                  tags: nkwrds.tags,
                  city: nkwrds.city,
-                 interval: nkwrds.interval || 'daily',
+                 interval: nkwrds.interval || 'default',
                })),
              );
             addMutate(newKeywords);
@@ -149,7 +160,7 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
                   <span className='text-gray-600 font-semibold text-xs'>Scraping Frequency:</span>
                   <SelectField
                      multiple={false}
-                     selected={[newKeywordsData.interval || 'daily']}
+                     selected={[newKeywordsData.interval || 'default']}
                      options={intervalOptions}
                      defaultLabel='Select Interval'
                      updateField={(updated:string[]) => {
@@ -159,7 +170,7 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
                      }}
                      rounded='rounded'
                      maxHeight={48}
-                     minWidth={180}
+                     minWidth={210}
                   />
                </div>
                <div className='relative'>

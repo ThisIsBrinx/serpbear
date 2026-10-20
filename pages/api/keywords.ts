@@ -91,7 +91,7 @@ const addKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
             domain,
             country,
             city,
-            interval: interval || 'daily',
+            interval: interval || 'default',
             position: 0,
             updating: true,
             history: JSON.stringify({}),

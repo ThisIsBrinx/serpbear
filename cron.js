@@ -114,7 +114,7 @@ const runAppCronJobs = async () => {
    // 1. RUN SERP Scraping CRON
    const scrape_interval = settings.scrape_interval || 'daily';
    if (scrape_interval !== 'never') {
-      const scrapeCronTime = generateCronTime(scrape_interval);
+      const scrapeCronTime = generateCronTime('daily');
       if (scrapeCronTime) {
          const serpJob = new Cron(scrapeCronTime, cronOptions, () => {
             console.log(`[${new Date().toISOString()}] [CRON] Running Keyword Position Scrape Job...`);

@@ -25,17 +25,27 @@ type KeywordsTableProps = {
    settings?: SettingsType
 }
 
-const bulkIntervalOptions = [
-   { label: 'Daily', value: 'daily' },
-   { label: 'Every Other Day', value: 'other_day' },
-   { label: 'Weekly', value: 'weekly' },
-   { label: 'Monthly', value: 'monthly' },
-   { label: 'Never', value: 'never' },
-];
+const intervalNameMap: Record<string, string> = {
+   daily: 'Daily',
+   other_day: 'Every Other Day',
+   weekly: 'Weekly',
+   monthly: 'Monthly',
+   never: 'Never',
+};
 
 const KeywordsTable = (props: KeywordsTableProps) => {
    const titleColumnRef = useRef(null);
    const { keywords = [], isLoading = true, isConsoleIntegrated = false, settings } = props;
+   const globalInterval = settings?.scrape_interval || 'daily';
+   const globalLabel = intervalNameMap[globalInterval] || 'Daily';
+   const bulkIntervalOptions = useMemo(() => [
+      { label: `Global Setting (${globalLabel})`, value: 'default' },
+      { label: 'Daily', value: 'daily' },
+      { label: 'Every Other Day', value: 'other_day' },
+      { label: 'Weekly', value: 'weekly' },
+      { label: 'Monthly', value: 'monthly' },
+      { label: 'Never', value: 'never' },
+   ], [globalLabel]);
    const showSCData = isConsoleIntegrated;
    const [device, setDevice] = useState<string>('desktop');
    const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
@@ -132,6 +142,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
          tableColumns={tableColumns}
          maxTitleColumnWidth={maxTitleColumnWidth}
          updateInterval={intervalMutate}
+         globalInterval={globalInterval}
          />
       );
    };
@@ -178,7 +189,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                         {showBulkIntervalMenu && (
                            <ul
                               className={'customShadow absolute bg-white border border-gray-200 rounded '
-                                 + 'w-44 mt-1 left-0 z-50 text-gray-600 font-normal'}
+                                 + 'w-52 mt-1 left-0 z-50 text-gray-600 font-normal'}
                            >
                               {bulkIntervalOptions.map((opt) => (
                                  <li

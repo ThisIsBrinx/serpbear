@@ -107,7 +107,7 @@ export const filterKeywords = (keywords: KeywordType[], filterParams: KeywordFil
        const searchMatch = !filterParams.search ? true : filterParams.search
        && keywrd.keyword.toLowerCase().includes(filterParams.search.toLowerCase());
        const tagsMatch = filterParams.tags.length === 0 ? true : filterParams.tags && keywrd.tags.find((x) => filterParams.tags.includes(x));
-       const intervalMatch = !filterParams.interval ? true : (keywrd.interval || 'daily') === filterParams.interval;
+       const intervalMatch = !filterParams.interval ? true : (keywrd.interval || 'default') === filterParams.interval;
 
        if (countryMatch && searchMatch && tagsMatch && intervalMatch) {
           filteredItems.push(keywrd);

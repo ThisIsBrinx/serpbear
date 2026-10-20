@@ -36,6 +36,7 @@ const cronRefreshkeywords = async (req: NextApiRequest, res: NextApiResponse<CRO
       const isMonday = now.getDay() === 1;
       const isFirstOfMonth = now.getDate() === 1;
       const isOtherDay = Math.floor(now.getTime() / 86400000) % 2 === 0;
+      const globalInterval = settings.scrape_interval || 'daily';
 
       // Optional manual query overrides (e.g. ?force=true, ?interval=weekly, ?interval=daily)
       const forceAll = req.query.force === 'all' || req.query.force === 'true' || req.query.interval === 'all';
@@ -44,13 +45,16 @@ const cronRefreshkeywords = async (req: NextApiRequest, res: NextApiResponse<CRO
       let whereClause: any = {};
       if (forceAll) {
          whereClause = {
-            interval: { [Op.ne]: 'never' },
+            [Op.or]: [
+               { interval: { [Op.ne]: 'never' } },
+               { interval: null },
+            ],
          };
       } else if (requestedInterval && ['daily', 'other_day', 'weekly', 'monthly'].includes(requestedInterval)) {
-         if (requestedInterval === 'daily') {
+         if (requestedInterval === globalInterval) {
             whereClause = {
                [Op.or]: [
-                  { interval: 'daily' },
+                  { interval: { [Op.in]: [requestedInterval, 'default'] } },
                   { interval: null },
                   { interval: '' },
                ],
@@ -64,13 +68,19 @@ const cronRefreshkeywords = async (req: NextApiRequest, res: NextApiResponse<CRO
          if (isMonday) dueIntervals.push('weekly');
          if (isFirstOfMonth) dueIntervals.push('monthly');
 
-         whereClause = {
-            [Op.or]: [
-               { interval: { [Op.in]: dueIntervals } },
-               { interval: null },
-               { interval: '' },
-            ],
-         };
+         if (dueIntervals.includes(globalInterval)) {
+            whereClause = {
+               [Op.or]: [
+                  { interval: { [Op.in]: [...dueIntervals, 'default'] } },
+                  { interval: null },
+                  { interval: '' },
+               ],
+            };
+         } else {
+            whereClause = {
+               interval: { [Op.in]: dueIntervals },
+            };
+         }
       }
 
       const keywordQueries: Keyword[] = await Keyword.findAll({ where: whereClause });

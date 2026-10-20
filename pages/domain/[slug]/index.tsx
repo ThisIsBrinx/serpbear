@@ -104,6 +104,7 @@ const SingleDomain: NextPage = () => {
                scraperName={activeScraper?.label || ''}
                keywords={theKeywords}
                allowsCity={!!activeScraper?.allowsCity}
+               scrapeInterval={appSettings?.scrape_interval}
                closeModal={() => setShowAddKeywords(false)}
                />
          </CSSTransition>

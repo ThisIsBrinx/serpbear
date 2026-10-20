@@ -24,10 +24,11 @@ type KeywordProps = {
    style: Object,
    maxTitleColumnWidth: number,
    tableColumns? : string[],
-   updateInterval?: Function
+   updateInterval?: Function,
+   globalInterval?: string
 }
 
-const intervalChoices = [
+const baseIntervalChoices = [
    { label: 'Daily', value: 'daily' },
    { label: 'Every Other Day', value: 'other_day' },
    { label: 'Weekly', value: 'weekly' },
@@ -36,6 +37,7 @@ const intervalChoices = [
 ];
 
 const intervalBadgeStyles: Record<string, string> = {
+   default: 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100',
    daily: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
    other_day: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100',
    weekly: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
@@ -69,17 +71,26 @@ const Keyword = (props: KeywordProps) => {
       tableColumns = [],
       maxTitleColumnWidth,
       updateInterval,
+      globalInterval = 'daily',
    } = props;
    const {
       keyword, domain, ID, city, position, url = '', lastUpdated, country, sticky,
-      history = {}, updating = false, lastUpdateError = false, volume, interval = 'daily',
+      history = {}, updating = false, lastUpdateError = false, volume, interval = 'default',
    } = keywordData;
 
    const [showOptions, setShowOptions] = useState(false);
    const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
    const [showPositionError, setPositionError] = useState(false);
 
-   const currentInterval = interval || 'daily';
+   const currentInterval = interval || 'default';
+   const globalLabel = intervalLabels[globalInterval] || 'Daily';
+   const intervalChoices = useMemo(() => [
+      { label: `Global Setting (${globalLabel})`, value: 'default' },
+      ...baseIntervalChoices,
+   ], [globalLabel]);
+   const badgeLabel = currentInterval === 'default'
+      ? `Global (${globalLabel})`
+      : (intervalLabels[currentInterval] || currentInterval);
 
    const turncatedURL = useMemo(() => {
       return url.replace(`https://${domain}`, '').replace(`https://www.${domain}`, '').replace(`http://${domain}`, '');
@@ -202,7 +213,7 @@ const Keyword = (props: KeywordProps) => {
             <button
                type="button"
                className={`px-2 py-1 rounded text-xs font-semibold border transition cursor-pointer select-none inline-flex items-center gap-1
-                  ${intervalBadgeStyles[currentInterval] || intervalBadgeStyles.daily}`}
+                  ${intervalBadgeStyles[currentInterval] || intervalBadgeStyles.default}`}
                onClick={() => {
                   if (updateInterval) {
                      setShowIntervalDropdown(!showIntervalDropdown);
@@ -211,12 +222,12 @@ const Keyword = (props: KeywordProps) => {
                }}
                title="Change Scraping Frequency"
             >
-               <span>{intervalLabels[currentInterval] || currentInterval}</span>
+               <span>{badgeLabel}</span>
                {updateInterval && <Icon type={showIntervalDropdown ? 'caret-up' : 'caret-down'} size={10} />}
             </button>
             {showIntervalDropdown && updateInterval && (
                <ul
-                  className='customShadow absolute bg-white border border-gray-200 rounded w-36 mt-1 left-1/2 -translate-x-1/2 z-50 text-left text-xs'
+                  className='customShadow absolute bg-white border border-gray-200 rounded w-48 mt-1 left-1/2 -translate-x-1/2 z-50 text-left text-xs'
                >
                   {intervalChoices.map((choice) => (
                      <li

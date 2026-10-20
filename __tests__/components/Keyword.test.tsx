@@ -9,6 +9,7 @@ const keywordProps = {
    showSCData: false,
    scDataType: '',
    style: {},
+   maxTitleColumnWidth: 235,
    refreshkeyword: jest.fn(),
    favoriteKeyword: jest.fn(),
    removeKeyword: jest.fn(),
@@ -18,7 +19,7 @@ const keywordProps = {
 };
 jest.mock('react-chartjs-2', () => ({
    Line: () => null,
- }));
+}));
 describe('Keyword Component', () => {
    it('renders without crashing', async () => {
        render(<Keyword {...keywordProps} />);
@@ -45,13 +46,30 @@ describe('Keyword Component', () => {
       if (button) fireEvent.click(button);
       expect(document.querySelector('.keyword_options')).toBeVisible();
    });
-   // it('Should favorite Keywords', async () => {
-   //    render(<Keyword {...keywordProps} />);
-   //    const button = document.querySelector('.keyword .keyword_dots');
-   //    if (button) fireEvent(button, new MouseEvent('click', { bubbles: true }));
-   //    const option = document.querySelector('.keyword .keyword_options li:nth-child(1) a');
-   //    if (option) fireEvent(option, new MouseEvent('click', { bubbles: true }));
-   //    const { favoriteKeyword } = keywordFunctions;
-   //    expect(favoriteKeyword).toHaveBeenCalled();
-   // });
+   it('Should Render Global Setting badge by default with globalInterval label', async () => {
+      render(<Keyword {...keywordProps} globalInterval="weekly" />);
+      expect(screen.getByText('Global (Weekly)')).toBeInTheDocument();
+   });
+   it('Should Open Interval Dropdown and Trigger updateInterval on Selection', async () => {
+      const updateIntervalMock = jest.fn();
+      const { container } = render(
+         <Keyword
+            {...keywordProps}
+            globalInterval="weekly"
+            updateInterval={updateIntervalMock}
+         />,
+      );
+      const intervalBtn = container.querySelector('.keyword_interval button');
+      expect(intervalBtn).toBeTruthy();
+      if (intervalBtn) fireEvent.click(intervalBtn);
+
+      const option = screen.getByText('Every Other Day');
+      expect(option).toBeVisible();
+      fireEvent.click(option);
+
+      expect(updateIntervalMock).toHaveBeenCalledWith({
+         keywordIDs: [dummyKeywords[0].ID],
+         interval: 'other_day',
+      });
+   });
 });

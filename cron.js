@@ -92,7 +92,7 @@ const runAppCronJobs = () => {
       // RUN SERP Scraping CRON (EveryDay at Midnight) 0 0 0 * *
       const scrape_interval = settings.scrape_interval || 'daily';
       if (scrape_interval !== 'never') {
-         const scrapeCronTime = generateCronTime(scrape_interval);
+         const scrapeCronTime = generateCronTime('daily');
          new Cron(scrapeCronTime, () => {
             // console.log('### Running Keyword Position Cron Job!');
             const fetchOpts = { method: 'POST', headers: { Authorization: `Bearer ${process.env.APIKEY}` } };

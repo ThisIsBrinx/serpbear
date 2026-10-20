@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import SingleDomain from '../../pages/domain/[slug]';
 import { useAddDomain, useDeleteDomain, useFetchDomains, useUpdateDomain } from '../../services/domains';
 import { useAddKeywords, useDeleteKeywords,
-   useFavKeywords, useFetchKeywords, useRefreshKeywords, useFetchSingleKeyword } from '../../services/keywords';
+   useFavKeywords, useFetchKeywords, useRefreshKeywords, useFetchSingleKeyword, useUpdateKeywordInterval } from '../../services/keywords';
 import { dummyDomain, dummyKeywords, dummySettings } from '../../__mocks__/data';
 import { useFetchSettings } from '../../services/settings';
 
@@ -32,6 +32,7 @@ const useUpdateDomainFunc = useUpdateDomain as jest.Mock<any>;
 const useDeleteDomainFunc = useDeleteDomain as jest.Mock<any>;
 const useFetchSettingsFunc = useFetchSettings as jest.Mock<any>;
 const useFetchSingleKeywordFunc = useFetchSingleKeyword as jest.Mock<any>;
+const useUpdateKeywordIntervalFunc = useUpdateKeywordInterval as jest.Mock<any>;
 
 describe('SingleDomain Page', () => {
    const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ describe('SingleDomain Page', () => {
       useAddKeywordsFunc.mockImplementation(() => ({ mutate: () => { } }));
       useUpdateDomainFunc.mockImplementation(() => ({ mutate: () => { } }));
       useDeleteDomainFunc.mockImplementation(() => ({ mutate: () => { } }));
+      useUpdateKeywordIntervalFunc.mockImplementation(() => ({ mutate: () => { } }));
    });
    afterEach(() => {
       jest.clearAllMocks();

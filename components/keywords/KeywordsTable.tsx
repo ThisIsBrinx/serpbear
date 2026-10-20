@@ -25,9 +25,27 @@ type KeywordsTableProps = {
    settings?: SettingsType
 }
 
+const intervalNameMap: Record<string, string> = {
+   daily: 'Daily',
+   other_day: 'Every Other Day',
+   weekly: 'Weekly',
+   monthly: 'Monthly',
+   never: 'Never',
+};
+
 const KeywordsTable = (props: KeywordsTableProps) => {
    const titleColumnRef = useRef(null);
    const { keywords = [], isLoading = true, isConsoleIntegrated = false, settings } = props;
+   const globalInterval = settings?.scrape_interval || 'daily';
+   const globalLabel = intervalNameMap[globalInterval] || 'Daily';
+   const bulkIntervalOptions = useMemo(() => [
+      { label: `Global Setting (${globalLabel})`, value: 'default' },
+      { label: 'Daily', value: 'daily' },
+      { label: 'Every Other Day', value: 'other_day' },
+      { label: 'Weekly', value: 'weekly' },
+      { label: 'Monthly', value: 'monthly' },
+      { label: 'Never', value: 'never' },
+   ], [globalLabel]);
    const showSCData = isConsoleIntegrated;
    const [device, setDevice] = useState<string>('desktop');
    const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
@@ -35,6 +53,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    const [showRemoveModal, setShowRemoveModal] = useState<boolean>(false);
    const [showTagManager, setShowTagManager] = useState<null|number>(null);
    const [showAddTags, setShowAddTags] = useState<boolean>(false);
+   const [showBulkIntervalMenu, setShowBulkIntervalMenu] = useState<boolean>(false);
    const [SCListHeight, setSCListHeight] = useState(500);
    const [filterParams, setFilterParams] = useState<KeywordFilters>({ countries: [], tags: [], search: '' });
    const [sortBy, setSortBy] = useState<string>('date_asc');
@@ -61,7 +80,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    }, [titleColumnRef]);
 
    const tableColumns = settings?.keywordsColumns || ['Best', 'History', 'Volume', 'Search Console'];
-   const { mutate: updateMutate, isLoading: isUpdatingSettings } = useUpdateSettings(() => console.log(''));
+   const { mutate: updateMutate } = useUpdateSettings(() => console.log(''));
 
    const scDataObject:{ [k:string] : string} = {
       threeDays: 'Last Three Days',
@@ -123,6 +142,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
          tableColumns={tableColumns}
          maxTitleColumnWidth={maxTitleColumnWidth}
          updateInterval={intervalMutate}
+         globalInterval={globalInterval}
          />
       );
    };
@@ -157,19 +177,34 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                         >
                            <span className=' bg-green-100 text-green-500  px-1 rounded'><Icon type="tags" size={14} /></span> Tag Keywords</a>
                      </li>
-                     <li className='inline-block mr-4'>
+                     <li className='inline-block mr-4 relative'>
                         <a
-                        className='block px-2 py-2 cursor-pointer hover:text-indigo-600'
-                        onClick={() => { intervalMutate({ keywordIDs: selectedKeywords, interval: 'daily' }); setSelectedKeywords([]); }}
+                        className='block px-2 py-2 cursor-pointer hover:text-indigo-600 select-none'
+                        onClick={() => setShowBulkIntervalMenu(!showBulkIntervalMenu)}
                         >
-                           <span className=' bg-indigo-100 text-indigo-700 px-1 rounded'><Icon type="clock" size={13} /></span> Set Daily</a>
-                     </li>
-                     <li className='inline-block mr-4'>
-                        <a
-                        className='block px-2 py-2 cursor-pointer hover:text-indigo-600'
-                        onClick={() => { intervalMutate({ keywordIDs: selectedKeywords, interval: 'weekly' }); setSelectedKeywords([]); }}
-                        >
-                           <span className=' bg-purple-100 text-purple-700 px-1 rounded'><Icon type="clock" size={13} /></span> Set Weekly (Mon)</a>
+                           <span className=' bg-purple-100 text-purple-700 px-1 rounded mr-1'><Icon type="clock" size={13} /></span>
+                           Set Interval
+                           <Icon classes="ml-1.5" type={showBulkIntervalMenu ? 'caret-up' : 'caret-down'} size={10} />
+                        </a>
+                        {showBulkIntervalMenu && (
+                           <ul
+                              className={'customShadow absolute bg-white border border-gray-200 rounded '
+                                 + 'w-52 mt-1 left-0 z-50 text-gray-600 font-normal'}
+                           >
+                              {bulkIntervalOptions.map((opt) => (
+                                 <li
+                                    key={opt.value}
+                                    className='px-3 py-2 cursor-pointer hover:bg-indigo-50 hover:text-indigo-600'
+                                    onClick={() => {
+                                       intervalMutate({ keywordIDs: selectedKeywords, interval: opt.value });
+                                       setSelectedKeywords([]);
+                                       setShowBulkIntervalMenu(false);
+                                    }}>
+                                    {opt.label}
+                                 </li>
+                              ))}
+                           </ul>
+                        )}
                      </li>
                   </ul>
                </div>
@@ -206,7 +241,6 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                               <Icon type="check" size={10} />
                         </button>
                      )}
-                  {/* ${showSCData ? 'lg:min-w-[220px]' : 'lg:min-w-[280px]'} */}
                         <span className={`inline-block lg:flex lg:items-center 
                            ${showSCData && tableColumns.includes('Search Console') ? 'lg:max-w-[235px]' : ''}`}>
                            Keyword
@@ -217,6 +251,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                      <span className={`domKeywords_head_history flex-1 basis-20 grow-0  ${shouldHideColumn('History')}`}>History (7d)</span>
                      <span className={`domKeywords_head_volume flex-1 basis-24 grow-0 text-center ${shouldHideColumn('Volume')}`}>Volume</span>
                      <span className='domKeywords_head_url flex-1'>URL</span>
+                     <span className='domKeywords_head_interval flex-1 basis-32 grow-0 text-center'>Interval</span>
                      <span className='domKeywords_head_updated flex-1 relative left-3 max-w-[150px]'>Updated</span>
                      {showSCData && tableColumns.includes('Search Console') && (
                         <div className='domKeywords_head_sc flex-1 min-w-[170px] lg:max-w-[170px] mr-7 text-center'>
@@ -247,7 +282,6 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                               <span className='min-w-[40px]'>Pos</span>
                               <span className='min-w-[40px]'>Imp</span>
                               <span className='min-w-[40px]'>Visits</span>
-                              {/* <span>CTR</span> */}
                            </div>
                         </div>
                      )}
@@ -315,6 +349,6 @@ const KeywordsTable = (props: KeywordsTableProps) => {
          <Toaster position='bottom-center' containerClassName="react_toaster" />
       </div>
    );
- };
+};
 
- export default KeywordsTable;
+export default KeywordsTable;

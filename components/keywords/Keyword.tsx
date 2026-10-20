@@ -24,8 +24,34 @@ type KeywordProps = {
    style: Object,
    maxTitleColumnWidth: number,
    tableColumns? : string[],
-   updateInterval?: Function
+   updateInterval?: Function,
+   globalInterval?: string
 }
+
+const baseIntervalChoices = [
+   { label: 'Daily', value: 'daily' },
+   { label: 'Every Other Day', value: 'other_day' },
+   { label: 'Weekly', value: 'weekly' },
+   { label: 'Monthly', value: 'monthly' },
+   { label: 'Never', value: 'never' },
+];
+
+const intervalBadgeStyles: Record<string, string> = {
+   default: 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100',
+   daily: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
+   other_day: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100',
+   weekly: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
+   monthly: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+   never: 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200',
+};
+
+const intervalLabels: Record<string, string> = {
+   daily: 'Daily',
+   other_day: 'Every Other Day',
+   weekly: 'Weekly',
+   monthly: 'Monthly',
+   never: 'Never',
+};
 
 const Keyword = (props: KeywordProps) => {
    const {
@@ -45,14 +71,26 @@ const Keyword = (props: KeywordProps) => {
       tableColumns = [],
       maxTitleColumnWidth,
       updateInterval,
+      globalInterval = 'daily',
    } = props;
    const {
       keyword, domain, ID, city, position, url = '', lastUpdated, country, sticky,
-      history = {}, updating = false, lastUpdateError = false, volume, interval = 'daily',
+      history = {}, updating = false, lastUpdateError = false, volume, interval = 'default',
    } = keywordData;
 
    const [showOptions, setShowOptions] = useState(false);
+   const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
    const [showPositionError, setPositionError] = useState(false);
+
+   const currentInterval = interval || 'default';
+   const globalLabel = intervalLabels[globalInterval] || 'Daily';
+   const intervalChoices = useMemo(() => [
+      { label: `Global Setting (${globalLabel})`, value: 'default' },
+      ...baseIntervalChoices,
+   ], [globalLabel]);
+   const badgeLabel = currentInterval === 'default'
+      ? `Global (${globalLabel})`
+      : (intervalLabels[currentInterval] || currentInterval);
 
    const turncatedURL = useMemo(() => {
       return url.replace(`https://${domain}`, '').replace(`https://www.${domain}`, '').replace(`http://${domain}`, '');
@@ -98,7 +136,8 @@ const Keyword = (props: KeywordProps) => {
       key={keyword + ID}
       style={style}
       className={`keyword relative py-5 px-4 text-gray-600 border-b-[1px] border-gray-200 lg:py-4 lg:px-6 lg:border-0 
-      lg:flex lg:justify-between lg:items-center ${selected ? ' bg-indigo-50 keyword--selected' : ''} ${lastItem ? 'border-b-0' : ''}`}>
+      lg:flex lg:justify-between lg:items-center ${selected ? ' bg-indigo-50 keyword--selected' : ''} ${lastItem ? 'border-b-0' : ''}
+      ${(showOptions || showIntervalDropdown) ? 'z-30' : ''}`}>
 
          <div className=' w-3/4 font-semibold cursor-pointer lg:flex-1 lg:shrink-0 lg:basis-28 lg:w-auto lg:flex lg:items-center'>
             <button
@@ -119,14 +158,6 @@ const Keyword = (props: KeywordProps) => {
                   {keyword}{city ? ` (${city})` : ''}
                </span>
             </a>
-            {interval === 'weekly' && (
-               <span
-                  className={'ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider '
-                     + 'bg-purple-50 text-purple-700 border border-purple-200 shrink-0'}
-                  title='Tracked Weekly (every Monday)'>
-                  Weekly
-               </span>
-            )}
             {sticky && <button className='ml-2 relative top-[2px]' title='Favorite'><Icon type="star-filled" size={16} color="#fbd346" /></button>}
             {lastUpdateError && lastUpdateError.date
                && <button className='ml-2 relative top-[2px]' onClick={() => setPositionError(true)}>
@@ -178,6 +209,45 @@ const Keyword = (props: KeywordProps) => {
             </a>
          </div>
 
+         <div className='keyword_interval inline-block mr-4 lg:mr-0 lg:flex-1 lg:basis-32 lg:grow-0 text-center relative'>
+            <button
+               type="button"
+               className={`px-2 py-1 rounded text-xs font-semibold border transition cursor-pointer select-none inline-flex items-center gap-1
+                  ${intervalBadgeStyles[currentInterval] || intervalBadgeStyles.default}`}
+               onClick={() => {
+                  if (updateInterval) {
+                     setShowIntervalDropdown(!showIntervalDropdown);
+                     setShowOptions(false);
+                  }
+               }}
+               title="Change Scraping Frequency"
+            >
+               <span>{badgeLabel}</span>
+               {updateInterval && <Icon type={showIntervalDropdown ? 'caret-up' : 'caret-down'} size={10} />}
+            </button>
+            {showIntervalDropdown && updateInterval && (
+               <ul
+                  className='customShadow absolute bg-white border border-gray-200 rounded w-48 mt-1 left-1/2 -translate-x-1/2 z-50 text-left text-xs'
+               >
+                  {intervalChoices.map((choice) => (
+                     <li
+                        key={choice.value}
+                        className={`px-3 py-2 cursor-pointer hover:bg-indigo-50 hover:text-indigo-600
+                           ${currentInterval === choice.value ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600'}`}
+                        onClick={() => {
+                           if (choice.value !== currentInterval) {
+                              updateInterval({ keywordIDs: [ID], interval: choice.value });
+                           }
+                           setShowIntervalDropdown(false);
+                        }}
+                     >
+                        {choice.label}
+                     </li>
+                  ))}
+               </ul>
+            )}
+         </div>
+
          <div
          className='inline-block mt-[4] top-[-5px] relative lg:flex-1 lg:m-0 lg:top-0 max-w-[150px]'>
             <span className='mr-2 lg:hidden'><Icon type="clock" size={14} color="#999" /></span>
@@ -200,14 +270,13 @@ const Keyword = (props: KeywordProps) => {
                <span className='min-w-[40px]'>
                   <span className='lg:hidden'>Visits: </span>{keywordData?.scData?.visits[scDataType as keyof KeywordSCDataChild] || 0}
                </span>
-               {/* <span>{keywordData?.scData?.ctr[scDataType] || '0.00%'}</span> */}
             </div>
          )}
 
          <div className='absolute right-4 mt-[-10px] top-2 lg:flex-1 lg:basis-5 lg:grow-0 lg:shrink-0 lg:relative lg:right-[-10px]'>
             <button
             className={`keyword_dots rounded px-1 text-indigo-300 hover:bg-indigo-50 ${showOptions ? 'bg-indigo-50 text-indigo-600 ' : ''}`}
-            onClick={() => setShowOptions(!showOptions)}>
+            onClick={() => { setShowOptions(!showOptions); setShowIntervalDropdown(false); }}>
                <Icon type="dots" size={20} />
             </button>
             {showOptions && (
@@ -227,20 +296,6 @@ const Keyword = (props: KeywordProps) => {
                   <li><a className={optionsButtonStyle} onClick={() => { manageTags(); setShowOptions(false); }}>
                      <span className=' bg-green-100 text-green-500 px-1 rounded'><Icon type="tags" size={14} /></span> Add/Edit Tags</a>
                   </li>
-                  {updateInterval && (
-                     <li>
-                        <a
-                        className={optionsButtonStyle}
-                        onClick={() => {
-                           updateInterval({ keywordIDs: [ID], interval: interval === 'weekly' ? 'daily' : 'weekly' });
-                           setShowOptions(false);
-                        }}>
-                           <span className=' bg-purple-100 text-purple-700 px-1 rounded'>
-                              <Icon type="clock" size={13} />
-                           </span> { interval === 'weekly' ? 'Switch to Daily' : 'Switch to Weekly (Mon)'}
-                        </a>
-                     </li>
-                  )}
                   <li><a className={optionsButtonStyle} onClick={() => { removeKeyword([ID]); setShowOptions(false); }}>
                      <span className=' bg-red-100 text-red-600 px-1 rounded'><Icon type="trash" size={14} /></span> Remove Keyword</a>
                   </li>
@@ -265,6 +320,6 @@ const Keyword = (props: KeywordProps) => {
 
       </div>
    );
- };
+};
 
- export default Keyword;
+export default Keyword;

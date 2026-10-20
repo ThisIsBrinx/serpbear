@@ -124,8 +124,16 @@ export function useUpdateKeywordInterval(onSuccess: Function) {
    }, {
       onSuccess: async (data) => {
          onSuccess();
-         const updatedInterval = data?.keywords?.[0]?.interval || 'daily';
-         toast(`Keyword Interval set to ${updatedInterval === 'weekly' ? 'Weekly (Mondays)' : 'Daily'}!`, { icon: '✔️' });
+         const updatedInterval = data?.keywords?.[0]?.interval || 'default';
+         const intervalLabels: Record<string, string> = {
+            default: 'Global Setting',
+            daily: 'Daily',
+            other_day: 'Every Other Day',
+            weekly: 'Weekly',
+            monthly: 'Monthly',
+            never: 'Never',
+         };
+         toast(`Scraping Frequency set to ${intervalLabels[updatedInterval] || updatedInterval}!`, { icon: '✔️' });
          queryClient.invalidateQueries(['keywords']);
       },
       onError: () => {

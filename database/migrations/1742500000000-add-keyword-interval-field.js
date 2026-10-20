@@ -8,7 +8,7 @@ module.exports = {
             if (keywordTableDefinition && !keywordTableDefinition.interval) {
                await queryInterface.addColumn('keyword', 'interval', {
                   type: Sequelize.DataTypes.STRING,
-                  defaultValue: 'daily',
+                  defaultValue: 'default',
                }, { transaction: t });
             }
          } catch (error) {

@@ -99,6 +99,7 @@ const KeywordFilters = (props: KeywordFilterProps) => {
       { value: 'Keyword', label: 'Keyword', locked: true },
       { value: 'Position', label: 'Position', locked: true },
       { value: 'URL', label: 'URL', locked: true },
+      { value: 'Interval', label: 'Interval', locked: true },
       { value: 'Updated', label: 'Updated', locked: true },
       { value: 'Best', label: 'Best', locked: false },
       { value: 'History', label: 'History', locked: false },
@@ -182,8 +183,12 @@ const KeywordFilters = (props: KeywordFilterProps) => {
                         selected={filterParams.interval ? [filterParams.interval] : []}
                         options={[
                            { label: 'All Intervals', value: '' },
+                           { label: 'Global Setting', value: 'default' },
                            { label: 'Daily', value: 'daily' },
-                           { label: 'Weekly (Mon)', value: 'weekly' },
+                           { label: 'Every Other Day', value: 'other_day' },
+                           { label: 'Weekly', value: 'weekly' },
+                           { label: 'Monthly', value: 'monthly' },
+                           { label: 'Never', value: 'never' },
                         ]}
                         defaultLabel='All Intervals'
                         updateField={(updated:string[]) => filterKeywords({ ...filterParams, interval: updated[0] || '' })}
